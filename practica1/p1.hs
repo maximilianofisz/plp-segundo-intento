@@ -200,3 +200,119 @@ mapDoble :: (a -> b -> c) -> [a] -> [b] -> [c]
 mapDoble f = foldr (\x rec ys -> if null ys then [] else (f x (head ys)) : rec (tail ys) ) (const [])
 
 -- ej 9
+
+--foldr :: (a -> b -> b) -> b -> [a] -> b
+--foldr f e [] = e
+--foldr f e (x:xs) = fx (foldr f e xs)
+
+-- i)
+foldNat :: (Integer -> b -> b) -> b -> Integer -> b
+foldNat f e 0 = e
+foldNat f e n = f n (foldNat f e (n-1))
+
+-- ii)
+
+
+potencia :: Integer -> Integer -> Integer
+potencia x = foldNat (\_ rec -> rec * x) 1
+
+-- potencia 2 3
+-- foldNat f 1 3
+-- f 3 (foldNat f 1 2)
+-- f 3 (f 2 (foldNat f 1 1))
+-- f 3 (f 2 (f 1 (foldNat f 1 0))
+-- f 3 (f 2 (f 1 (1)))
+-- f 3 (f 2 (2))
+-- f 3 (4)
+-- 8
+
+-- ej 12
+
+-- recr :: (a -> [a] -> b -> b) -> b -> [a] -> b
+-- recr _ z [] = z
+-- recr f z (x : xs) = f x xs (recr f z xs)
+
+data AB a = Nil | Bin (AB a) a (AB a) deriving (Show)
+
+-- i)
+
+foldAB :: (b -> a -> b -> b) -> b -> AB a -> b
+foldAB f e Nil = e
+foldAB f e (Bin izq nodo der) = f (foldAB f e izq) nodo (foldAB f e der)
+
+recAB :: (AB a -> AB a -> b -> a -> b -> b) -> b -> AB a -> b
+recAB f e Nil = e
+recAB f e (Bin izq nodo der) = f izq der (recAB f e izq) nodo (recAB f e der)
+
+-- ii )
+-- (Bin (Bin Nil 3 Nil) 5 Bin (Nil 1 (Bin Nil 4 Nil)))
+
+esNil :: AB a -> Bool
+esNil arbol = case arbol of
+                Nil -> True
+                Bin izq nodo der -> False
+
+altura :: AB a -> Integer
+altura = foldAB (\izq nodo der -> 1 + max izq der) 0
+
+cantNodos :: AB a -> Integer
+cantNodos = foldAB (\izq nodo der -> 1 + izq + der) 0
+
+-- iii )
+
+--mejorSegún :: (a -> a -> Bool) -> AB a -> a
+--mejorSegún f (Bin l v r) = foldAB v (\rl v rr -> (rl `g` v) `g` rr) (Bin l v r)
+--    where g x y = if f x y then x else y
+
+mejorSegunAB :: (a -> a -> Bool) -> AB a -> a
+mejorSegunAB f (Bin izq nodo der) = foldAB (\izq nodo der -> g nodo (g izq der)) nodo (Bin izq nodo der)
+                where g x y = if f x y then x else y
+
+
+
+-- Ej 15
+--data AB a = Nil | Bin (AB a) a (AB a) deriving (Show)
+
+--i)
+data RoseTree a = Rose a [RoseTree a]
+
+-- ii)
+
+--foldr :: (a -> b -> b) -> b -> [a] -> b
+--foldr f e [] = e
+--foldr f e (x:xs) = fx (foldr f e xs)
+
+foldRose :: (a -> [b] -> b) -> RoseTree a -> b
+foldRose f (Rose n hijos) = f n (map (foldRose f) hijos)
+
+-- iii)
+
+hojas :: RoseTree a -> [a]
+hojas = foldRose (\nodoActual hijos -> if null hijos then [nodoActual] else concat hijos)
+
+-- (Rose 1 [ Rose 2 [], Rose 3 [Rose 4 [], Rose 5 []]])
+
+--foldRose f rt
+-- f 1 (map (foldRose f) hijos)
+-- f 1 ([foldRose f hijos2 , foldRose f hijos3])
+-- f 1 ([f 2 (map (foldRose f) [])), f 3 (map (foldRose f) []))])
+-- f 1 ([f 2 [], f 3 []])
+-- f 1 ([[2], [3]])
+
+distancias :: RoseTree a -> [Integer]
+distancias = foldRose (\nodoActual hijos -> if null hijos then [0] else map (\n -> n + 1) (concat hijos))
+
+alturaRT :: RoseTree a -> Integer
+alturaRT = foldRose (\nodoActual hijos -> if null hijos then 1 else 1 + (mejorSegun (>) hijos))
+
+--foldRose f rt
+-- f 1 (map (foldRose f) hijos)
+-- f 1 ([foldRose f hijos2 , foldRose f hijos3])
+-- f 1 ([f 2 (map (foldRose f) [])), f 3 (map (foldRose f) []))])
+-- f 1 ([f 2 [], f 3 []])
+-- f 1 ([1, 1])
+
+
+-- (Rose 10 [ Rose 20 [Rose 30 [Rose 40 []]], Rose 50 []])
+
+-- (Rose 'A'[ Rose 'B' [ Rose 'C' [], Rose 'D' []], Rose 'E' [ Rose 'F' [ Rose 'G' [], Rose 'H' []]]])
